@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gold Coast RP Community</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+</head>
+<body class="dark-bg">
+  <!-- Navbar with Logo and Departments Dropdown -->
+  <nav class="navbar main-navbar">
+    <div class="navbar-left">
+      <img src="https://i.ibb.co/PvdNLNGT/Designer-3-removebg-preview.png" alt="Gold Coast RP Logo" class="navbar-logo" />
+      <span class="site-title">Gold Coast RP</span>
+    </div>
+    <ul class="navbar-menu">
+      <li><a href="/">Home</a></li>
+      <li class="dropdown">
+        <span>Departments</span>
+        <ul class="dropdown-menu">
+          <li><a href="/lspd">LSPD</a></li>
+          <li><a href="/bcso">BCSO</a></li>
+          <li><a href="/lsfd">LSFD</a></li>
+          <li><a href="/sahp">SAHP</a></li>
+          <li><a href="/sacd">SACD</a></li>
+          <li><a href="/civilian">Civilian</a></li>
+        </ul>
+      </li>
+      <li><a href="/events">Events</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="https://discord.gg/yourdiscord" target="_blank">Join Discord</a></li>
+    </ul>
+    <div class="navbar-auth" id="navbar-auth">
+      <button id="openSignIn" class="btn btn-primary">Sign In</button>
+      <button id="openSignUp" class="btn btn-secondary">Sign Up</button>
+    </div>
+    <div id="navbar-user" style="display:none;"></div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero-section">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <img src="https://i.imgur.com/HIZIXDs.png" alt="Gold Coast RP Logo" class="hero-logo" />
+      <h1 class="hero-title">Gold Coast RP</h1>
+      <p class="hero-tagline">The Premier FiveM Roleplay Community</p>
+      <a href="https://discord.gg/yourdiscord" target="_blank" class="btn btn-discord-cta">
+        <img src="discord-logo.png" alt="Discord" class="discord-icon" /> Join Discord
+      </a>
+    </div>
+  </header>
+
+  <!-- About Section -->
+  <section class="about-section">
+    <div class="container">
+      <h2>Welcome to Gold Coast RP</h2>
+      <p>Gold Coast RP is a vibrant FiveM community focused on immersive, realistic roleplay. Join us for custom scripts, active staff, and a welcoming environment for all types of players!</p>
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-number">5+</span> Years Active</div>
+        <div class="stat-card"><span class="stat-number">1,200+</span> Members</div>
+        <div class="stat-card"><span class="stat-number">6</span> Departments</div>
+        <div class="stat-card"><span class="stat-number">24/7</span> Patrols</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section">
+    <div class="container">
+      <h2>Why Join Gold Coast RP?</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <span class="feature-icon">🎮</span>
+          <h4>Custom Scripts</h4>
+          <p>Unique gameplay and immersive features built for our community.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">👮‍♂️</span>
+          <h4>Active Staff</h4>
+          <p>Friendly, helpful staff and regular patrols keep the city safe and fun.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🤝</span>
+          <h4>Welcoming Community</h4>
+          <p>All roleplayers welcome, from beginners to veterans.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🔗</span>
+          <h4>Discord Integration</h4>
+          <p>Stay connected with Discord for events, support, and more.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Events Section -->
+  <section class="events-section">
+    <div class="container">
+      <h2>Upcoming Events</h2>
+      <div class="events-list">
+        <div class="event-card">
+          <h4>GCRP Live Patrol</h4>
+          <p>July 1, 2025 – 2:00 AM</p>
+        </div>
+        <div class="event-card">
+          <h4>Community Meeting</h4>
+          <p>July 5, 2025 – 8:00 PM</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Call to Action -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Ready to Join?</h2>
+      <p>Become part of the Gold Coast RP legacy. Apply now or join our Discord to get started!</p>
+      <a href="https://discord.gg/yourdiscord" target="_blank" class="btn btn-discord-cta">
+        <img src="discord-logo.png" alt="Discord" class="discord-icon" /> Join Discord
+      </a>
+      <a href="/open-applications" class="btn btn-primary">Apply Now</a>
+    </div>
+  </section>
+
+  <!-- Sign In Modal -->
+  <div id="signInModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeSignIn">&times;</span>
+      <h2>Sign In</h2>
+      <form id="signInForm">
+        <input type="email" id="signInEmail" placeholder="Email" required />
+        <input type="password" id="signInPassword" placeholder="Password" required />
+        <label class="remember-me"><input type="checkbox" id="signInRemember" /> Remember me</label>
+        <button type="submit" class="btn btn-primary">Sign In</button>
+        <div class="modal-links">
+          <a href="#" id="forgotPassword">Forgot your password?</a>
+        </div>
+        <div class="modal-divider">or</div>
+        <button type="button" class="btn btn-discord" id="discordLoginBtn">
+          <img src="discord-logo.png" alt="Discord" class="discord-icon" /> Login with Discord
+        </button>
+      </form>
+      <div id="signInError" class="modal-error"></div>
+    </div>
+  </div>
+
+  <!-- Sign Up Modal -->
+  <div id="signUpModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeSignUp">&times;</span>
+      <h2>Sign Up</h2>
+      <form id="signUpForm">
+        <input type="text" id="signUpUsername" placeholder="Username" required />
+        <input type="email" id="signUpEmail" placeholder="Email" required />
+        <input type="password" id="signUpPassword" placeholder="Password" required />
+        <input type="password" id="signUpConfirmPassword" placeholder="Confirm Password" required />
+        <input type="text" id="signUpDiscord" placeholder="Discord ID (optional)" />
+        <button type="submit" class="btn btn-primary">Sign Up</button>
+      </form>
+      <div id="signUpError" class="modal-error"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <span>&copy; 2025 Gold Coast RP. All rights reserved.</span>
+      <span class="footer-links">
+        <a href="/">Home</a> |
+        <a href="/departments">Departments</a> |
+        <a href="/events">Events</a> |
+        <a href="/resources">Resources</a>
+      </span>
+    </div>
+  </footer>
+
+  <script src="auth-modals.js"></script>
+</body>
+</html> 
