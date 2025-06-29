@@ -3,6 +3,7 @@ const multer = require('multer');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { auth, optionalAuth } = require('../middleware/auth');
+const path = require('path');
 
 const router = express.Router();
 
@@ -31,157 +32,144 @@ const upload = multer({
   }
 });
 
-// Get user profile
+// Get user profile by username
 router.get('/profile/:username', optionalAuth, async (req, res) => {
   try {
-    const user = await User.findOne({ username: req.params.username })
-      .populate('roles')
-      .select('-password -email -discordId');
-
+    const user = await User.findByUsername(req.params.username);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      return res.status(404).json({ success: false, message: 'User not found' });
     }
-
-    // Check if current user is following this user
-    let isFollowing = false;
-    if (req.userData) {
-      isFollowing = req.userData.following.includes(user._id);
-    }
-
+    const roles = await User.getRoles(user.id);
+    const followers = await User.getFollowers(user.id);
+    const badges = await User.getBadges(user.id);
+    const activity = await User.getActivity(user.id, 10);
     res.json({
       success: true,
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
-        profile: user.profile,
-        roles: user.roles,
-        followers: user.followers.length,
-        following: user.following.length,
-        isFollowing,
-        joinDate: user.profile.joinDate,
-        lastActivity: user.lastActivity
+        avatar: user.avatar,
+        bio: user.bio,
+        roles,
+        followers: followers.map(f => f.follower_id),
+        badges,
+        joinDate: user.created_at,
+        lastLogin: user.last_login,
+        activity
       }
     });
-
   } catch (error) {
-    console.error('Get profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-// Update user profile
-router.put('/profile', auth, [
-  body('displayName')
-    .optional()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Display name must be between 1 and 50 characters'),
-  body('bio')
-    .optional()
-    .isLength({ max: 500 })
-    .withMessage('Bio must be less than 500 characters'),
-  body('location')
-    .optional()
-    .isLength({ max: 100 })
-    .withMessage('Location must be less than 100 characters'),
-  body('dateOfBirth')
-    .optional()
-    .isISO8601()
-    .withMessage('Invalid date format')
-], async (req, res) => {
+// Edit own profile (bio, display name, etc.)
+router.put('/profile', auth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
+    const { bio } = req.body;
+    if (bio !== undefined) {
+      await User.setBio(req.user.userId, bio);
     }
-
-    const { displayName, bio, location, dateOfBirth } = req.body;
-
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Update profile fields
-    if (displayName !== undefined) user.profile.displayName = displayName;
-    if (bio !== undefined) user.profile.bio = bio;
-    if (location !== undefined) user.profile.location = location;
-    if (dateOfBirth !== undefined) {
-      user.profile.dateOfBirth = new Date(dateOfBirth);
-      // Calculate age
-      const today = new Date();
-      const birthDate = new Date(dateOfBirth);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      user.profile.age = age;
-    }
-
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Profile updated successfully',
-      profile: user.profile
-    });
-
+    res.json({ success: true, message: 'Profile updated' });
   } catch (error) {
-    console.error('Update profile error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
-// Upload avatar
+// Avatar upload
 router.post('/avatar', auth, upload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded'
-      });
+      return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
-
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    // Update avatar path
-    user.profile.avatar = `/uploads/${req.file.filename}`;
-    await user.save();
-
-    res.json({
-      success: true,
-      message: 'Avatar uploaded successfully',
-      avatar: user.profile.avatar
-    });
-
+    const avatarUrl = '/uploads/' + req.file.filename;
+    await User.setAvatar(req.user.userId, avatarUrl);
+    res.json({ success: true, message: 'Avatar uploaded', avatar: avatarUrl });
   } catch (error) {
-    console.error('Upload avatar error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Follow a user
+router.post('/:id/follow', auth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    if (userId === req.user.userId) {
+      return res.status(400).json({ success: false, message: 'Cannot follow yourself' });
+    }
+    await User.addFollower(userId, req.user.userId);
+    res.json({ success: true, message: 'Followed user' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Unfollow a user
+router.post('/:id/unfollow', auth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    await User.removeFollower(userId, req.user.userId);
+    res.json({ success: true, message: 'Unfollowed user' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get followers
+router.get('/:id/followers', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const followers = await User.getFollowers(userId);
+    res.json({ success: true, followers });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get following
+router.get('/:id/following', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const following = await User.getFollowing(userId);
+    res.json({ success: true, following });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get badges
+router.get('/:id/badges', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const badges = await User.getBadges(userId);
+    res.json({ success: true, badges });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Add badge (admin only, for now just allow any logged-in user for demo)
+router.post('/:id/badges', auth, async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { badge } = req.body;
+    let badges = await User.getBadges(userId);
+    badges.push(badge);
+    await User.setBadges(userId, badges);
+    res.json({ success: true, badges });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Get recent activity
+router.get('/:id/activity', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const activity = await User.getActivity(userId, 10);
+    res.json({ success: true, activity });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -215,181 +203,6 @@ router.post('/banner', auth, upload.single('banner'), async (req, res) => {
 
   } catch (error) {
     console.error('Upload banner error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// Follow user
-router.post('/follow/:userId', auth, async (req, res) => {
-  try {
-    const targetUser = await User.findById(req.params.userId);
-    if (!targetUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    if (targetUser._id.toString() === req.user.userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Cannot follow yourself'
-      });
-    }
-
-    const currentUser = await User.findById(req.user.userId);
-    
-    // Check if already following
-    if (currentUser.following.includes(targetUser._id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Already following this user'
-      });
-    }
-
-    // Add to following
-    currentUser.following.push(targetUser._id);
-    targetUser.followers.push(currentUser._id);
-
-    await Promise.all([currentUser.save(), targetUser.save()]);
-
-    res.json({
-      success: true,
-      message: 'User followed successfully'
-    });
-
-  } catch (error) {
-    console.error('Follow user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// Unfollow user
-router.delete('/follow/:userId', auth, async (req, res) => {
-  try {
-    const targetUser = await User.findById(req.params.userId);
-    if (!targetUser) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const currentUser = await User.findById(req.user.userId);
-    
-    // Check if following
-    if (!currentUser.following.includes(targetUser._id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Not following this user'
-      });
-    }
-
-    // Remove from following
-    currentUser.following = currentUser.following.filter(id => id.toString() !== targetUser._id.toString());
-    targetUser.followers = targetUser.followers.filter(id => id.toString() !== currentUser._id.toString());
-
-    await Promise.all([currentUser.save(), targetUser.save()]);
-
-    res.json({
-      success: true,
-      message: 'User unfollowed successfully'
-    });
-
-  } catch (error) {
-    console.error('Unfollow user error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// Get user's followers
-router.get('/:userId/followers', optionalAuth, async (req, res) => {
-  try {
-    const { page = 1, limit = 20 } = req.query;
-
-    const user = await User.findById(req.params.userId)
-      .populate({
-        path: 'followers',
-        select: 'username profile.displayName profile.avatar',
-        options: {
-          limit: limit * 1,
-          skip: (page - 1) * limit
-        }
-      });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const total = user.followers.length;
-
-    res.json({
-      success: true,
-      followers: user.followers,
-      pagination: {
-        current: page,
-        pages: Math.ceil(total / limit),
-        total
-      }
-    });
-
-  } catch (error) {
-    console.error('Get followers error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// Get user's following
-router.get('/:userId/following', optionalAuth, async (req, res) => {
-  try {
-    const { page = 1, limit = 20 } = req.query;
-
-    const user = await User.findById(req.params.userId)
-      .populate({
-        path: 'following',
-        select: 'username profile.displayName profile.avatar',
-        options: {
-          limit: limit * 1,
-          skip: (page - 1) * limit
-        }
-      });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    const total = user.following.length;
-
-    res.json({
-      success: true,
-      following: user.following,
-      pagination: {
-        current: page,
-        pages: Math.ceil(total / limit),
-        total
-      }
-    });
-
-  } catch (error) {
-    console.error('Get following error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

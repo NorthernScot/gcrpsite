@@ -259,6 +259,67 @@ class User {
       ban_reason: null 
     });
   }
+
+  // Avatar
+  static async setAvatar(userId, avatarUrl) {
+    const db = getDb();
+    await db.run('UPDATE users SET avatar = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [avatarUrl, userId]);
+  }
+  static async getAvatar(userId) {
+    const db = getDb();
+    const user = await db.get('SELECT avatar FROM users WHERE id = ?', [userId]);
+    return user ? user.avatar : null;
+  }
+
+  // Bio
+  static async setBio(userId, bio) {
+    const db = getDb();
+    await db.run('UPDATE users SET bio = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [bio, userId]);
+  }
+  static async getBio(userId) {
+    const db = getDb();
+    const user = await db.get('SELECT bio FROM users WHERE id = ?', [userId]);
+    return user ? user.bio : null;
+  }
+
+  // Badges
+  static async setBadges(userId, badges) {
+    const db = getDb();
+    await db.run('UPDATE users SET badges = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [JSON.stringify(badges), userId]);
+  }
+  static async getBadges(userId) {
+    const db = getDb();
+    const user = await db.get('SELECT badges FROM users WHERE id = ?', [userId]);
+    return user && user.badges ? JSON.parse(user.badges) : [];
+  }
+
+  // Followers
+  static async addFollower(userId, followerId) {
+    const db = getDb();
+    await db.run('INSERT OR IGNORE INTO followers (user_id, follower_id) VALUES (?, ?)', [userId, followerId]);
+  }
+  static async removeFollower(userId, followerId) {
+    const db = getDb();
+    await db.run('DELETE FROM followers WHERE user_id = ? AND follower_id = ?', [userId, followerId]);
+  }
+  static async getFollowers(userId) {
+    const db = getDb();
+    return await db.all('SELECT follower_id FROM followers WHERE user_id = ?', [userId]);
+  }
+  static async getFollowing(followerId) {
+    const db = getDb();
+    return await db.all('SELECT user_id FROM followers WHERE follower_id = ?', [followerId]);
+  }
+
+  // Activity
+  static async addActivity(userId, type, data) {
+    const db = getDb();
+    await db.run('INSERT INTO activity (user_id, type, data) VALUES (?, ?, ?)', [userId, type, JSON.stringify(data)]);
+  }
+  static async getActivity(userId, limit = 10) {
+    const db = getDb();
+    return await db.all('SELECT * FROM activity WHERE user_id = ? ORDER BY created_at DESC LIMIT ?', [userId, limit]);
+  }
 }
 
 module.exports = User; 

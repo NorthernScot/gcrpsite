@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Profile | Gold Coast RP</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .profile-hero { text-align: center; padding: 2em 1em 1em 1em; }
+    .profile-avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #5865f2; margin-bottom: 1em; }
+    .profile-username { font-size: 2em; font-weight: 700; margin-bottom: 0.2em; }
+    .profile-roles { margin-bottom: 1em; }
+    .profile-role { display: inline-block; background: #23272a; color: #fff; border-radius: 1em; padding: 0.3em 1em; margin: 0 0.3em; font-size: 1em; }
+    .profile-bio { color: #b3b3b3; margin-bottom: 1.5em; }
+    .profile-badges { margin-bottom: 1.5em; }
+    .badge { display: inline-block; background: #5865f2; color: #fff; border-radius: 1em; padding: 0.3em 1em; margin: 0 0.2em 0.5em 0.2em; font-size: 0.95em; }
+    .profile-followers { margin-bottom: 2em; }
+    .follower-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #23272a; margin: 0 0.2em; }
+    .profile-activity { background: #23272a; border-radius: 1em; padding: 1.5em; margin-bottom: 2em; }
+    .activity-item { margin-bottom: 1em; color: #fff; }
+    .activity-type { color: #7289da; font-weight: 600; }
+    .profile-edit-btn { margin-top: 1em; }
+  </style>
+</head>
+<body class="dark-bg">
+  <nav class="navbar main-navbar">
+    <div class="navbar-left">
+      <img src="/goldcoast-badge.png" alt="Gold Coast RP Logo" class="navbar-logo" />
+      <span class="site-title">Gold Coast RP</span>
+    </div>
+    <ul class="navbar-menu">
+      <li><a href="/">Home</a></li>
+      <li class="dropdown">
+        <span>Departments</span>
+        <ul class="dropdown-menu">
+          <li><a href="/lspd">LSPD</a></li>
+          <li><a href="/bcso">BCSO</a></li>
+          <li><a href="/lsfd">LSFD</a></li>
+          <li><a href="/sahp">SAHP</a></li>
+          <li><a href="/sacd">SACD</a></li>
+          <li><a href="/civilian">Civilian</a></li>
+        </ul>
+      </li>
+      <li><a href="/events">Events</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="https://discord.gg/yourdiscord" target="_blank">Join Discord</a></li>
+    </ul>
+    <div class="navbar-auth" id="navbar-auth">
+      <button id="openSignIn" class="btn btn-primary">Sign In</button>
+      <button id="openSignUp" class="btn btn-secondary">Sign Up</button>
+    </div>
+    <div id="navbar-user" style="display:none;"></div>
+  </nav>
+  <main>
+    <section class="profile-hero">
+      <img id="profile-avatar" class="profile-avatar" src="/default-avatar.png" alt="User Avatar" />
+      <div class="profile-username" id="profile-username">Username</div>
+      <div class="profile-roles" id="profile-roles"></div>
+      <div class="profile-bio" id="profile-bio"></div>
+      <div class="profile-badges" id="profile-badges"></div>
+      <button id="follow-btn" class="btn btn-primary" style="display:none;">Follow</button>
+      <button id="unfollow-btn" class="btn btn-secondary" style="display:none;">Unfollow</button>
+      <button id="edit-profile-btn" class="btn btn-secondary profile-edit-btn" style="display:none;">Edit Profile</button>
+      <form id="edit-profile-form" style="display:none; margin-top:2em;">
+        <textarea id="edit-bio" rows="3" maxlength="500" style="width:100%;margin-bottom:1em;"></textarea><br>
+        <input type="file" id="edit-avatar" accept="image/*" style="margin-bottom:1em;"><br>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" id="cancel-edit" class="btn btn-secondary">Cancel</button>
+      </form>
+    </section>
+    <section class="profile-followers">
+      <h3>Followers</h3>
+      <div id="followers-list"></div>
+    </section>
+    <section class="profile-activity">
+      <h3>Recent Activity</h3>
+      <div id="activity-list"></div>
+    </section>
+  </main>
+  <footer class="footer">
+    <div class="container">
+      <span>&copy; 2025 Gold Coast RP. All rights reserved.</span>
+      <span class="footer-links">
+        <a href="/">Home</a> |
+        <a href="/departments">Departments</a> |
+        <a href="/events">Events</a> |
+        <a href="/resources">Resources</a>
+      </span>
+    </div>
+  </footer>
+  <script>
+    // Helper: get username from URL (e.g., /profile.html?user=thomas)
+    function getUsernameFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('user');
+    }
+    // Simulate auth (replace with real auth in production)
+    function getLoggedInUsername() {
+      // For demo, get from localStorage or hardcode
+      return localStorage.getItem('username') || null;
+    }
+    async function fetchProfile(username) {
+      const res = await fetch(`/api/users/profile/${username}`);
+      const data = await res.json();
+      return data.user;
+    }
+    async function fetchFollowers(userId) {
+      const res = await fetch(`/api/users/${userId}/followers`);
+      const data = await res.json();
+      return data.followers;
+    }
+    async function fetchActivity(userId) {
+      const res = await fetch(`/api/users/${userId}/activity`);
+      const data = await res.json();
+      return data.activity;
+    }
+    async function fetchIsFollowing(userId, loggedInId) {
+      // For demo, just check if in followers list
+      const followers = await fetchFollowers(userId);
+      return followers.some(f => f.follower_id == loggedInId);
+    }
+    async function followUser(userId) {
+      await fetch(`/api/users/${userId}/follow`, { method: 'POST', credentials: 'include' });
+    }
+    async function unfollowUser(userId) {
+      await fetch(`/api/users/${userId}/unfollow`, { method: 'POST', credentials: 'include' });
+    }
+    async function updateProfile(bio) {
+      await fetch('/api/users/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ bio })
+      });
+    }
+    async function uploadAvatar(file) {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      await fetch('/api/users/avatar', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      });
+    }
+    async function renderProfile() {
+      const username = getUsernameFromUrl();
+      if (!username) return;
+      const user = await fetchProfile(username);
+      document.getElementById('profile-avatar').src = user.avatar || '/default-avatar.png';
+      document.getElementById('profile-username').textContent = user.username;
+      // Roles
+      const rolesDiv = document.getElementById('profile-roles');
+      rolesDiv.innerHTML = '';
+      (user.roles || []).forEach(role => {
+        const span = document.createElement('span');
+        span.className = 'profile-role';
+        span.textContent = role.name;
+        rolesDiv.appendChild(span);
+      });
+      // Bio
+      document.getElementById('profile-bio').textContent = user.bio || '';
+      // Badges
+      const badgesDiv = document.getElementById('profile-badges');
+      badgesDiv.innerHTML = '';
+      (user.badges || []).forEach(badge => {
+        const span = document.createElement('span');
+        span.className = 'badge';
+        span.textContent = badge;
+        badgesDiv.appendChild(span);
+      });
+      // Followers
+      const followers = await fetchFollowers(user.id);
+      const followersList = document.getElementById('followers-list');
+      followersList.innerHTML = '';
+      for (const f of followers) {
+        const img = document.createElement('img');
+        img.className = 'follower-avatar';
+        img.src = '/default-avatar.png';
+        img.title = f.follower_id;
+        followersList.appendChild(img);
+      }
+      // Activity
+      const activity = await fetchActivity(user.id);
+      const activityList = document.getElementById('activity-list');
+      activityList.innerHTML = '';
+      (activity || []).forEach(act => {
+        const div = document.createElement('div');
+        div.className = 'activity-item';
+        div.innerHTML = `<span class='activity-type'>${act.type}</span> - ${act.data}`;
+        activityList.appendChild(div);
+      });
+      // Show edit/follow buttons
+      const loggedIn = getLoggedInUsername();
+      document.getElementById('edit-profile-btn').style.display = (loggedIn === user.username) ? '' : 'none';
+      document.getElementById('follow-btn').style.display = (loggedIn && loggedIn !== user.username) ? '' : 'none';
+      document.getElementById('unfollow-btn').style.display = 'none';
+      if (loggedIn && loggedIn !== user.username) {
+        // Check if following
+        const isFollowing = await fetchIsFollowing(user.id, loggedIn);
+        document.getElementById('follow-btn').style.display = isFollowing ? 'none' : '';
+        document.getElementById('unfollow-btn').style.display = isFollowing ? '' : 'none';
+      }
+    }
+    // Edit profile logic
+    document.getElementById('edit-profile-btn').onclick = function() {
+      document.getElementById('edit-profile-form').style.display = '';
+      document.getElementById('edit-bio').value = document.getElementById('profile-bio').textContent;
+    };
+    document.getElementById('cancel-edit').onclick = function() {
+      document.getElementById('edit-profile-form').style.display = 'none';
+    };
+    document.getElementById('edit-profile-form').onsubmit = async function(e) {
+      e.preventDefault();
+      const bio = document.getElementById('edit-bio').value;
+      await updateProfile(bio);
+      const file = document.getElementById('edit-avatar').files[0];
+      if (file) await uploadAvatar(file);
+      document.getElementById('edit-profile-form').style.display = 'none';
+      renderProfile();
+    };
+    // Follow/unfollow logic
+    document.getElementById('follow-btn').onclick = async function() {
+      const username = getUsernameFromUrl();
+      const user = await fetchProfile(username);
+      await followUser(user.id);
+      renderProfile();
+    };
+    document.getElementById('unfollow-btn').onclick = async function() {
+      const username = getUsernameFromUrl();
+      const user = await fetchProfile(username);
+      await unfollowUser(user.id);
+      renderProfile();
+    };
+    renderProfile();
+  </script>
+</body>
+</html> 
