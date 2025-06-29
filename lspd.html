@@ -2,84 +2,80 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Los Santos Police Department</title>
+  <title>LSPD | Gold Coast RP</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <div class="background"></div>
-  <nav class="navbar">
+<body class="dark-bg">
+  <nav class="navbar main-navbar">
     <div class="navbar-left">
-      <img src="assets/logo-placeholder.png" alt="Logo" class="logo">
+      <img src="https://i.imgur.com/HIZIXDs.png" alt="Gold Coast RP Logo" class="navbar-logo" />
       <span class="site-title">Gold Coast RP</span>
     </div>
     <ul class="navbar-menu">
-      <li>GCRP Life</li>
-      <li>Forums</li>
-      <li>Open Applications</li>
+      <li><a href="/">Home</a></li>
       <li class="dropdown">
-        Departments
+        <span>Departments</span>
         <ul class="dropdown-menu">
-          <li><a href="lspd.html">Los Santos Police Department</a></li>
-          <li><a href="sahp.html">San Andreas Highway Patrol</a></li>
-          <li><a href="bcso.html">Blaine County Sheriff's Office</a></li>
-          <li><a href="lsfd.html">Los Santos Fire Department</a></li>
-          <li><a href="sacd.html">San Andreas Communications Department</a></li>
-          <li><a href="civilian.html">Civilian Operations</a></li>
+          <li><a href="/lspd">LSPD</a></li>
+          <li><a href="/bcso">BCSO</a></li>
+          <li><a href="/lsfd">LSFD</a></li>
+          <li><a href="/sahp">SAHP</a></li>
+          <li><a href="/sacd">SACD</a></li>
+          <li><a href="/civilian">Civilian</a></li>
         </ul>
       </li>
-      <li>Events</li>
-      <li>Resources</li>
+      <li><a href="/events">Events</a></li>
+      <li><a href="/resources">Resources</a></li>
+      <li><a href="https://discord.gg/yourdiscord" target="_blank">Join Discord</a></li>
     </ul>
-    <div class="navbar-right">
-      <span class="user-info">Thomas M. 21-45</span>
-      <div class="social-icons">
-        <span class="icon">F</span>
-        <span class="icon">T</span>
-        <span class="icon">Y</span>
-        <span class="icon">D</span>
+    <div class="navbar-auth" id="navbar-auth">
+      <button id="openSignIn" class="btn btn-primary">Sign In</button>
+      <button id="openSignUp" class="btn btn-secondary">Sign Up</button>
+    </div>
+    <div id="navbar-user" style="display:none;"></div>
+  </nav>
+  <header class="hero-section" style="background:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat; min-height: 50vh;">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <img src="https://i.imgur.com/8QfQF5F.png" alt="LSPD Logo" class="hero-logo" />
+      <h1 class="hero-title">Los Santos Police Department</h1>
+      <p class="hero-tagline">Protecting and Serving Los Santos</p>
+      <a href="https://discord.gg/yourdiscord" target="_blank" class="btn btn-primary">Join LSPD</a>
+    </div>
+  </header>
+  <section class="about-section">
+    <div class="container">
+      <h2>About LSPD</h2>
+      <p>The Los Santos Police Department is dedicated to keeping the city safe with professionalism and integrity. Join our ranks for realistic law enforcement roleplay, advanced training, and a supportive team environment.</p>
+      <div class="features-grid">
+        <div class="feature-card">
+          <img src="https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80" alt="Patrol Car" style="width:100%;border-radius:1em;max-width:220px;" />
+          <h4>Modern Fleet</h4>
+          <p>Drive the latest police vehicles, fully equipped for any situation.</p>
+        </div>
+        <div class="feature-card">
+          <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=400&q=80" alt="Officer" style="width:100%;border-radius:1em;max-width:220px;" />
+          <h4>Elite Officers</h4>
+          <p>Work alongside experienced officers and climb the ranks.</p>
+        </div>
+        <div class="feature-card">
+          <img src="https://images.unsplash.com/photo-1504215680853-026ed2a45def?auto=format&fit=crop&w=400&q=80" alt="Training" style="width:100%;border-radius:1em;max-width:220px;" />
+          <h4>Advanced Training</h4>
+          <p>Participate in regular training sessions and special operations.</p>
+        </div>
       </div>
     </div>
-  </nav>
-  <main class="main-content">
-    <section class="center-box">
-      <div class="badges">
-        <img src="assets/badge1.png" alt="LSPD Badge">
-      </div>
-      <h1>Los Santos Police Department</h1>
-      <p class="intro">The Los Santos Police Department (LSPD) is dedicated to protecting and serving the citizens of Los Santos. Our officers are committed to upholding the law and ensuring the safety of our community through professionalism, integrity, and respect.</p>
-      <h2>About LSPD</h2>
-      <p>The LSPD is one of the largest and most active departments in the community, offering a wide range of career opportunities and specialized units. Join us to make a difference in Los Santos!</p>
-      <ul class="requirements">
-        <li>Strong sense of justice and responsibility</li>
-        <li>Excellent communication skills</li>
-        <li>Ability to work in a team</li>
-      </ul>
-      <p class="footer">Los Santos Police Department © 2025</p>
-    </section>
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <h3>Open Applications</h3>
-        <ul>
-          <li>GCRP Life Application</li>
-          <li>Civilian Reserve</li>
-          <li>Volunteer Fire</li>
-          <li>Communications Reserve</li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <h3>Upcoming Events</h3>
-        <ul>
-          <li>LSPD Patrol<br>Every Friday 8:00 PM</li>
-        </ul>
-      </div>
-      <div class="sidebar-section">
-        <h3>Contact</h3>
-        <ul>
-          <li>Email: lspd@gcrp.com</li>
-        </ul>
-      </div>
-    </aside>
-  </main>
+  </section>
+  <footer class="footer">
+    <div class="container">
+      <span>&copy; 2025 Gold Coast RP. All rights reserved.</span>
+      <span class="footer-links">
+        <a href="/">Home</a> |
+        <a href="/departments">Departments</a> |
+        <a href="/events">Events</a> |
+        <a href="/resources">Resources</a>
+      </span>
+    </div>
+  </footer>
 </body>
 </html> 
