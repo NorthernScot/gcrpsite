@@ -142,10 +142,10 @@ async function updateNavbarUser() {
       sessionStorage.removeItem('gcrp_token');
       window.location.reload();
     };
-    // Profile link (optional: implement profile page)
+    // Profile link (now links to profile.html?user=USERNAME)
     document.getElementById('profileLink').onclick = (e) => {
       e.preventDefault();
-      alert('Profile page coming soon!');
+      window.location.href = '/profile.html?user=' + encodeURIComponent(user.username);
     };
   } catch {
     navbarAuth.style.display = '';
