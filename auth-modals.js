@@ -104,18 +104,22 @@ async function updateNavbarUser() {
     });
     const data = await res.json();
     if (!data.success || !data.user) throw new Error();
-    // Build user info
     const user = data.user;
-    let avatar = user.profile_picture || '/default-avatar.png';
+    let avatar = user.avatar || user.profile_picture || '';
     let name = user.username || user.email;
-    let badge = (user.roles && user.roles.length > 0) ? user.roles[0].name : '';
-    let badgeDisplay = (user.roles && user.roles.length > 0) ? user.roles[0].displayName || user.roles[0].name : '';
-    // HTML
+    // Avatar HTML
+    let avatarHtml = '';
+    if (avatar) {
+      avatarHtml = `<img src="${avatar}" class="user-avatar" alt="Avatar" />`;
+    } else {
+      const initial = name ? name.charAt(0).toUpperCase() : '?';
+      avatarHtml = `<div class="user-avatar-fallback">${initial}</div>`;
+    }
+    // HTML (only avatar and username)
     navbarUser.innerHTML = `
       <button class="navbar-user-btn" id="userDropdownBtn">
-        <img src="${avatar}" class="user-avatar" alt="Avatar" />
+        ${avatarHtml}
         <span>${name}</span>
-        ${badgeDisplay ? `<span class="user-badge">${badgeDisplay}</span>` : ''}
         <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor" style="margin-left:0.3em;"><path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.06l3.71-3.83a.75.75 0 1 1 1.08 1.04l-4.25 4.39a.75.75 0 0 1-1.08 0l-4.25-4.39a.75.75 0 0 1 .02-1.06z"/></svg>
       </button>
       <div class="user-dropdown" id="userDropdownMenu">

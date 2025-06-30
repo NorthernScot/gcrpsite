@@ -740,4 +740,19 @@ body, html {
 
 .user-dropdown a:hover, .user-dropdown button:hover {
   background: #5865f2;
+}
+
+.user-avatar-fallback {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #5865f2;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1em;
+  margin-right: 0.5em;
+  box-shadow: 0 0 0 2px #23272a;
 } 

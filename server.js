@@ -18,6 +18,7 @@ const userRoutes = require('./routes/users');
 const applicationRoutes = require('./routes/applications');
 const adminRoutes = require('./routes/admin');
 const discordRoutes = require('./routes/discord');
+const profileRoutes = require('./routes/profile');
 
 // Middleware
 app.use(helmet());
@@ -65,6 +66,7 @@ async function startServer() {
     app.use('/api/applications', applicationRoutes);
     app.use('/api/admin', adminRoutes);
     app.use('/api/discord', discordRoutes);
+    app.use('/api/profile', profileRoutes);
 
     // Serve frontend pages
     app.get('/', (req, res) => {
