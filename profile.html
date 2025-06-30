@@ -142,10 +142,26 @@
         body: formData
       });
     }
+    // --- PROFILE PAGE LOGGED-IN USER ONLY ---
+    async function fetchLoggedInProfile() {
+      const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
+      if (!token) {
+        window.location.href = '/'; // Or show login modal
+        return null;
+      }
+      const res = await fetch('/api/profile', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (!data.success || !data.user) {
+        window.location.href = '/';
+        return null;
+      }
+      return data.user;
+    }
     async function renderProfile() {
-      const username = getUsernameFromUrl();
-      if (!username) return;
-      const user = await fetchProfile(username);
+      const user = await fetchLoggedInProfile();
+      if (!user) return;
       document.getElementById('profile-avatar').src = user.avatar || '/default-avatar.png';
       document.getElementById('profile-username').textContent = user.username;
       // Roles
@@ -168,38 +184,13 @@
         span.textContent = badge;
         badgesDiv.appendChild(span);
       });
-      // Followers
-      const followers = await fetchFollowers(user.id);
-      const followersList = document.getElementById('followers-list');
-      followersList.innerHTML = '';
-      for (const f of followers) {
-        const img = document.createElement('img');
-        img.className = 'follower-avatar';
-        img.src = '/default-avatar.png';
-        img.title = f.follower_id;
-        followersList.appendChild(img);
-      }
-      // Activity
-      const activity = await fetchActivity(user.id);
-      const activityList = document.getElementById('activity-list');
-      activityList.innerHTML = '';
-      (activity || []).forEach(act => {
-        const div = document.createElement('div');
-        div.className = 'activity-item';
-        div.innerHTML = `<span class='activity-type'>${act.type}</span> - ${act.data}`;
-        activityList.appendChild(div);
-      });
-      // Show edit/follow buttons
-      const loggedIn = getLoggedInUsername();
-      document.getElementById('edit-profile-btn').style.display = (loggedIn === user.username) ? '' : 'none';
-      document.getElementById('follow-btn').style.display = (loggedIn && loggedIn !== user.username) ? '' : 'none';
+      // Followers and Activity (optional: can be hidden or shown as empty)
+      document.getElementById('followers-list').innerHTML = '';
+      document.getElementById('activity-list').innerHTML = '';
+      // Show edit button
+      document.getElementById('edit-profile-btn').style.display = '';
+      document.getElementById('follow-btn').style.display = 'none';
       document.getElementById('unfollow-btn').style.display = 'none';
-      if (loggedIn && loggedIn !== user.username) {
-        // Check if following
-        const isFollowing = await fetchIsFollowing(user.id, loggedIn);
-        document.getElementById('follow-btn').style.display = isFollowing ? 'none' : '';
-        document.getElementById('unfollow-btn').style.display = isFollowing ? '' : 'none';
-      }
     }
     // Edit profile logic
     document.getElementById('edit-profile-btn').onclick = function() {
@@ -231,7 +222,7 @@
       await unfollowUser(user.id);
       renderProfile();
     };
-    renderProfile();
+    window.addEventListener('DOMContentLoaded', renderProfile);
   </script>
 </body>
 </html> 
