@@ -153,6 +153,30 @@
   <script src="auth-modals.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      console.log('[Profile] DOMContentLoaded');
+      // --- Error Display ---
+      let errorDiv = document.getElementById('profile-error');
+      if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'profile-error';
+        errorDiv.style.color = '#ff5555';
+        errorDiv.style.background = '#23272a';
+        errorDiv.style.padding = '1em';
+        errorDiv.style.margin = '1em 0';
+        errorDiv.style.borderRadius = '8px';
+        errorDiv.style.display = 'none';
+        document.querySelector('.profile-main').prepend(errorDiv);
+      }
+      function showError(msg) {
+        errorDiv.textContent = msg;
+        errorDiv.style.display = 'block';
+        console.error('[Profile] ' + msg);
+      }
+      function hideError() {
+        errorDiv.textContent = '';
+        errorDiv.style.display = 'none';
+      }
+
       // --- Theme Toggle ---
       const themeToggle = document.getElementById('themeToggle');
       themeToggle.onclick = function() {
@@ -220,41 +244,55 @@
       }
       async function fetchProfileByUsername(username) {
         try {
+          console.log('[Profile] Fetching user profile for', username);
           const res = await fetch(`/api/users/profile/${encodeURIComponent(username)}`);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
           const data = await res.json();
           if (!data.success || !data.user) throw new Error('User not found');
           return data.user;
         } catch (err) {
-          alert('User not found.');
-          window.location.href = '/';
+          showError('User not found or error fetching user: ' + err.message);
+          setTimeout(() => { window.location.href = '/'; }, 2000);
         }
       }
       async function fetchLoggedInProfile() {
         const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
         if (!token) {
-          window.location.href = '/';
+          showError('Not logged in. Redirecting...');
+          setTimeout(() => { window.location.href = '/'; }, 2000);
           return null;
         }
-        const res = await fetch('/api/profile', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await res.json();
-        if (!data.success || !data.user) {
-          window.location.href = '/';
+        try {
+          console.log('[Profile] Fetching logged-in user profile');
+          const res = await fetch('/api/profile', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (!data.success || !data.user) throw new Error('User not found');
+          return data.user;
+        } catch (err) {
+          showError('Error fetching your profile: ' + err.message);
+          setTimeout(() => { window.location.href = '/'; }, 2000);
           return null;
         }
-        return data.user;
       }
       async function fetchMe() {
-        // For checking if viewing own profile
         const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
         if (!token) return null;
-        const res = await fetch('/api/auth/me', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const data = await res.json();
-        if (!data.success || !data.user) return null;
-        return data.user;
+        try {
+          console.log('[Profile] Fetching /api/auth/me');
+          const res = await fetch('/api/auth/me', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          if (!data.success || !data.user) throw new Error('Not logged in');
+          return data.user;
+        } catch (err) {
+          showError('Error fetching auth info: ' + err.message);
+          return null;
+        }
       }
       function renderStats(user) {
         const stats = [
@@ -266,6 +304,7 @@
         document.getElementById('profile-stats').innerHTML = stats.map(s => `<div class=\"stat-card\"><div class=\"stat-value\">${s.value}</div><div class=\"stat-label\">${s.label}</div></div>`).join('');
       }
       function renderProfile(user, isOwnProfile) {
+        hideError();
         document.getElementById('profile-avatar').src = user.avatar || '/default-avatar.png';
         document.getElementById('profile-username').textContent = user.username;
         document.getElementById('profile-discord').innerHTML = `<i class='fab fa-discord'></i> ${user.discord || 'Not linked'} <span id='discord-status'></span>`;
@@ -287,12 +326,12 @@
         });
         renderStats(user);
         document.getElementById('profile-bio').textContent = user.bio || '';
-        // Show/hide edit button
         document.getElementById('edit-profile-btn').style.display = isOwnProfile ? '' : 'none';
       }
       async function renderActivity(user) {
         try {
           const res = await fetch(`/api/users/${user.id}/activity`);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
           const data = await res.json();
           const activityList = document.getElementById('activity-list');
           activityList.innerHTML = '';
@@ -302,47 +341,57 @@
             div.innerHTML = `<span class='activity-icon'><i class='fa fa-${item.icon || 'bolt'}'></i></span> <span>${item.text}</span> <span style='color:#b3b3b3;font-size:0.9em;'>${new Date(item.date).toLocaleString()}</span>`;
             activityList.appendChild(div);
           });
-        } catch {}
+        } catch (err) {
+          showError('Could not load activity: ' + err.message);
+        }
       }
       // --- Edit Profile Logic ---
       const editBtn = document.getElementById('edit-profile-btn');
       const editForm = document.getElementById('edit-profile-form');
       const cancelEdit = document.getElementById('cancel-edit');
-      editBtn.onclick = function() {
-        editForm.style.display = 'flex';
-        fetchLoggedInProfile().then(user => {
-          document.getElementById('edit-username').value = user.username;
-          document.getElementById('edit-discord').value = user.discord || '';
-          document.getElementById('edit-bio').value = user.bio || '';
-        });
-      };
-      cancelEdit.onclick = function() {
-        editForm.style.display = 'none';
-      };
-      editForm.onsubmit = async function(e) {
-        e.preventDefault();
-        const username = document.getElementById('edit-username').value;
-        const discord = document.getElementById('edit-discord').value;
-        const bio = document.getElementById('edit-bio').value;
-        await fetch('/api/users/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username, discord, bio })
-        });
-        const file = document.getElementById('edit-avatar').files[0];
-        if (file) {
-          const formData = new FormData();
-          formData.append('avatar', file);
-          await fetch('/api/users/avatar', {
-            method: 'POST',
-            credentials: 'include',
-            body: formData
+      if (editBtn && editForm && cancelEdit) {
+        editBtn.onclick = function() {
+          editForm.style.display = 'flex';
+          fetchLoggedInProfile().then(user => {
+            document.getElementById('edit-username').value = user.username;
+            document.getElementById('edit-discord').value = user.discord || '';
+            document.getElementById('edit-bio').value = user.bio || '';
           });
-        }
-        editForm.style.display = 'none';
-        loadProfile();
-      };
+        };
+        cancelEdit.onclick = function() {
+          editForm.style.display = 'none';
+        };
+        editForm.onsubmit = async function(e) {
+          e.preventDefault();
+          const username = document.getElementById('edit-username').value;
+          const discord = document.getElementById('edit-discord').value;
+          const bio = document.getElementById('edit-bio').value;
+          try {
+            await fetch('/api/users/profile', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({ username, discord, bio })
+            });
+            const file = document.getElementById('edit-avatar').files[0];
+            if (file) {
+              const formData = new FormData();
+              formData.append('avatar', file);
+              await fetch('/api/users/avatar', {
+                method: 'POST',
+                credentials: 'include',
+                body: formData
+              });
+            }
+            editForm.style.display = 'none';
+            loadProfile();
+          } catch (err) {
+            showError('Error saving profile: ' + err.message);
+          }
+        };
+      } else {
+        showError('Edit profile elements not found in DOM.');
+      }
       document.getElementById('logout-btn').onclick = function() {
         localStorage.removeItem('gcrp_token');
         sessionStorage.removeItem('gcrp_token');
@@ -350,6 +399,7 @@
       };
       // --- Load Profile ---
       async function loadProfile() {
+        hideError();
         const urlUser = getUsernameFromUrl();
         let user = null;
         let isOwnProfile = false;
@@ -366,7 +416,15 @@
         renderActivity(user);
       }
       loadProfile();
-      if (typeof updateNavbarUser === 'function') updateNavbarUser();
+      if (typeof updateNavbarUser === 'function') {
+        try {
+          updateNavbarUser();
+        } catch (err) {
+          showError('Navbar update failed: ' + err.message);
+        }
+      } else {
+        showError('updateNavbarUser is not defined. Navbar will not update.');
+      }
     });
   </script>
 </body>
