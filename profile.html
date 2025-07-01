@@ -189,18 +189,22 @@
         document.body.classList.remove('dark-bg');
       }
 
-      // --- Profile Tabs Logic (with hash support) ---
+      // --- Robust Profile Tabs Logic (always query sections fresh) ---
       const sidebarLinks = document.querySelectorAll('.sidebar-link');
-      const sections = {
-        profile: document.querySelector('.profile-info-card'),
-        security: document.getElementById('security-section'),
-        activity: document.getElementById('activity-section'),
-        settings: document.getElementById('settings-section')
+      const sectionIds = {
+        profile: 'profile-info-card',
+        security: 'security-section',
+        activity: 'activity-section',
+        settings: 'settings-section'
       };
-      // Helper: show section by key
       function showSection(key) {
-        Object.keys(sections).forEach(k => {
-          if (sections[k]) sections[k].style.display = (k === key) ? '' : 'none';
+        let found = false;
+        Object.keys(sectionIds).forEach(k => {
+          const el = document.getElementById(sectionIds[k]);
+          if (el) {
+            el.style.display = (k === key) ? '' : 'none';
+            if (k === key) found = true;
+          }
         });
         sidebarLinks.forEach(link => {
           if (link.getAttribute('href') === '#' + key) {
@@ -209,6 +213,12 @@
             link.classList.remove('active');
           }
         });
+        if (!found) {
+          showError('Section for tab "' + key + '" not found in DOM.');
+        } else {
+          hideError();
+        }
+        console.log('[Profile] showSection:', key, 'found:', found);
       }
       // On tab click: update hash and show section
       sidebarLinks.forEach(link => {
@@ -218,7 +228,6 @@
           if (window.location.hash !== hash) {
             window.location.hash = hash;
           } else {
-            // If already on this hash, manually trigger
             showSection(hash.replace('#', ''));
           }
         });
@@ -226,7 +235,7 @@
       // On hash change or page load, show correct section
       function handleHash() {
         const hash = window.location.hash.replace('#', '');
-        if (sections[hash]) {
+        if (sectionIds[hash]) {
           showSection(hash);
         } else {
           showSection('profile');
