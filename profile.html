@@ -189,53 +189,51 @@
         document.body.classList.remove('dark-bg');
       }
 
-      // --- Profile Tabs Logic ---
+      // --- Profile Tabs Logic (with hash support) ---
       const sidebarLinks = document.querySelectorAll('.sidebar-link');
       const sections = {
         profile: document.querySelector('.profile-info-card'),
-        security: null,
+        security: document.getElementById('security-section'),
         activity: document.getElementById('activity-section'),
-        settings: null
+        settings: document.getElementById('settings-section')
       };
-      if (!document.getElementById('security-section')) {
-        const sec = document.createElement('section');
-        sec.className = 'profile-section';
-        sec.id = 'security-section';
-        sec.innerHTML = '<h3><i class="fa fa-lock"></i> Security</h3><div style="margin-top:1em;color:#b3b3b3;">Change your password, enable 2FA, and manage account security here. (Coming soon)</div>';
-        document.querySelector('.profile-main').appendChild(sec);
-        sections.security = sec;
-      } else {
-        sections.security = document.getElementById('security-section');
+      // Helper: show section by key
+      function showSection(key) {
+        Object.keys(sections).forEach(k => {
+          if (sections[k]) sections[k].style.display = (k === key) ? '' : 'none';
+        });
+        sidebarLinks.forEach(link => {
+          if (link.getAttribute('href') === '#' + key) {
+            link.classList.add('active');
+          } else {
+            link.classList.remove('active');
+          }
+        });
       }
-      if (!document.getElementById('settings-section')) {
-        const set = document.createElement('section');
-        set.className = 'profile-section';
-        set.id = 'settings-section';
-        set.innerHTML = '<h3><i class="fa fa-cog"></i> Settings</h3><div style="margin-top:1em;color:#b3b3b3;">Personalize your experience. (Coming soon)</div>';
-        document.querySelector('.profile-main').appendChild(set);
-        sections.settings = set;
-      } else {
-        sections.settings = document.getElementById('settings-section');
-      }
-      sections.security.style.display = 'none';
-      sections.settings.style.display = 'none';
+      // On tab click: update hash and show section
       sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
           e.preventDefault();
-          sidebarLinks.forEach(l => l.classList.remove('active'));
-          this.classList.add('active');
-          sections.profile.style.display = 'none';
-          sections.security.style.display = 'none';
-          sections.activity.style.display = 'none';
-          sections.settings.style.display = 'none';
-          if (this.getAttribute('href') === '#profile') sections.profile.style.display = '';
-          if (this.getAttribute('href') === '#security') sections.security.style.display = '';
-          if (this.getAttribute('href') === '#activity') sections.activity.style.display = '';
-          if (this.getAttribute('href') === '#settings') sections.settings.style.display = '';
+          const hash = this.getAttribute('href');
+          if (window.location.hash !== hash) {
+            window.location.hash = hash;
+          } else {
+            // If already on this hash, manually trigger
+            showSection(hash.replace('#', ''));
+          }
         });
       });
-      sections.profile.style.display = '';
-      sections.activity.style.display = '';
+      // On hash change or page load, show correct section
+      function handleHash() {
+        const hash = window.location.hash.replace('#', '');
+        if (sections[hash]) {
+          showSection(hash);
+        } else {
+          showSection('profile');
+        }
+      }
+      window.addEventListener('hashchange', handleHash);
+      handleHash(); // Initial
 
       // --- Profile Fetch Logic ---
       function getUsernameFromUrl() {
