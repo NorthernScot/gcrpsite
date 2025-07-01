@@ -150,193 +150,196 @@
       </span>
     </div>
   </footer>
+  <script src="auth-modals.js"></script>
   <script>
-    // --- Theme Toggle ---
-    const themeToggle = document.getElementById('themeToggle');
-    themeToggle.onclick = function() {
-      document.body.classList.toggle('light-bg');
-      document.body.classList.toggle('dark-bg');
-      localStorage.setItem('theme', document.body.classList.contains('light-bg') ? 'light' : 'dark');
-    };
-    // On load, set theme
-    if (localStorage.getItem('theme') === 'light') {
-      document.body.classList.add('light-bg');
-      document.body.classList.remove('dark-bg');
-    }
-
-    // --- Profile Tabs Logic ---
-    const sidebarLinks = document.querySelectorAll('.sidebar-link');
-    const sections = {
-      profile: document.querySelector('.profile-info-card'),
-      security: null,
-      activity: document.getElementById('activity-section'),
-      settings: null
-    };
-    // Create Security and Settings sections if not present
-    if (!document.getElementById('security-section')) {
-      const sec = document.createElement('section');
-      sec.className = 'profile-section';
-      sec.id = 'security-section';
-      sec.innerHTML = '<h3><i class="fa fa-lock"></i> Security</h3><div style="margin-top:1em;color:#b3b3b3;">Change your password, enable 2FA, and manage account security here. (Coming soon)</div>';
-      document.querySelector('.profile-main').appendChild(sec);
-      sections.security = sec;
-    }
-    if (!document.getElementById('settings-section')) {
-      const set = document.createElement('section');
-      set.className = 'profile-section';
-      set.id = 'settings-section';
-      set.innerHTML = '<h3><i class="fa fa-cog"></i> Settings</h3><div style="margin-top:1em;color:#b3b3b3;">Personalize your experience. (Coming soon)</div>';
-      document.querySelector('.profile-main').appendChild(set);
-      sections.settings = set;
-    }
-    // Hide all except profile and activity by default
-    sections.security.style.display = 'none';
-    sections.settings.style.display = 'none';
-    // Tab click logic
-    sidebarLinks.forEach(link => {
-      link.addEventListener('click', function(e) {
-        e.preventDefault();
-        sidebarLinks.forEach(l => l.classList.remove('active'));
-        this.classList.add('active');
-        // Hide all
-        sections.profile.style.display = 'none';
-        sections.security.style.display = 'none';
-        sections.activity.style.display = 'none';
-        sections.settings.style.display = 'none';
-        // Show selected
-        if (this.getAttribute('href') === '#profile') sections.profile.style.display = '';
-        if (this.getAttribute('href') === '#security') sections.security.style.display = '';
-        if (this.getAttribute('href') === '#activity') sections.activity.style.display = '';
-        if (this.getAttribute('href') === '#settings') sections.settings.style.display = '';
-      });
-    });
-    // Show only profile and activity by default
-    sections.profile.style.display = '';
-    sections.activity.style.display = '';
-
-    // --- Profile Data Fetch & Render ---
-    async function fetchLoggedInProfile() {
-      const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
-      if (!token) {
-        window.location.href = '/';
-        return null;
+    document.addEventListener('DOMContentLoaded', function() {
+      // --- Theme Toggle ---
+      const themeToggle = document.getElementById('themeToggle');
+      themeToggle.onclick = function() {
+        document.body.classList.toggle('light-bg');
+        document.body.classList.toggle('dark-bg');
+        localStorage.setItem('theme', document.body.classList.contains('light-bg') ? 'light' : 'dark');
+      };
+      if (localStorage.getItem('theme') === 'light') {
+        document.body.classList.add('light-bg');
+        document.body.classList.remove('dark-bg');
       }
-      const res = await fetch('/api/profile', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      const data = await res.json();
-      if (!data.success || !data.user) {
-        window.location.href = '/';
-        return null;
+
+      // --- Profile Tabs Logic ---
+      const sidebarLinks = document.querySelectorAll('.sidebar-link');
+      const sections = {
+        profile: document.querySelector('.profile-info-card'),
+        security: null,
+        activity: document.getElementById('activity-section'),
+        settings: null
+      };
+      // Create Security and Settings sections if not present
+      if (!document.getElementById('security-section')) {
+        const sec = document.createElement('section');
+        sec.className = 'profile-section';
+        sec.id = 'security-section';
+        sec.innerHTML = '<h3><i class="fa fa-lock"></i> Security</h3><div style="margin-top:1em;color:#b3b3b3;">Change your password, enable 2FA, and manage account security here. (Coming soon)</div>';
+        document.querySelector('.profile-main').appendChild(sec);
+        sections.security = sec;
+      } else {
+        sections.security = document.getElementById('security-section');
       }
-      return data.user;
-    }
-    function renderStats(user) {
-      const stats = [
-        { label: 'Joined', value: new Date(user.createdAt).toLocaleDateString() },
-        { label: 'Last Login', value: new Date(user.lastLogin).toLocaleString() },
-        { label: 'Applications', value: user.applications?.length || 0 },
-        { label: 'Departments', value: user.departments?.length || 0 },
-      ];
-      document.getElementById('profile-stats').innerHTML = stats.map(s => `<div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
-    }
-    function renderProfile(user) {
-      document.getElementById('profile-avatar').src = user.avatar || '/default-avatar.png';
-      document.getElementById('profile-username').textContent = user.username;
-      document.getElementById('profile-discord').innerHTML = `<i class='fab fa-discord'></i> ${user.discord || 'Not linked'} <span id='discord-status'></span>`;
-      // Roles
-      const rolesDiv = document.getElementById('profile-roles');
-      rolesDiv.innerHTML = '';
-      (user.roles || []).forEach(role => {
-        const span = document.createElement('span');
-        span.className = 'profile-role';
-        span.textContent = role.name;
-        rolesDiv.appendChild(span);
+      if (!document.getElementById('settings-section')) {
+        const set = document.createElement('section');
+        set.className = 'profile-section';
+        set.id = 'settings-section';
+        set.innerHTML = '<h3><i class="fa fa-cog"></i> Settings</h3><div style="margin-top:1em;color:#b3b3b3;">Personalize your experience. (Coming soon)</div>';
+        document.querySelector('.profile-main').appendChild(set);
+        sections.settings = set;
+      } else {
+        sections.settings = document.getElementById('settings-section');
+      }
+      // Hide all except profile and activity by default
+      sections.security.style.display = 'none';
+      sections.settings.style.display = 'none';
+      // Tab click logic
+      sidebarLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          sidebarLinks.forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
+          // Hide all
+          sections.profile.style.display = 'none';
+          sections.security.style.display = 'none';
+          sections.activity.style.display = 'none';
+          sections.settings.style.display = 'none';
+          // Show selected
+          if (this.getAttribute('href') === '#profile') sections.profile.style.display = '';
+          if (this.getAttribute('href') === '#security') sections.security.style.display = '';
+          if (this.getAttribute('href') === '#activity') sections.activity.style.display = '';
+          if (this.getAttribute('href') === '#settings') sections.settings.style.display = '';
+        });
       });
-      // Badges
-      const badgesDiv = document.getElementById('profile-badges');
-      badgesDiv.innerHTML = '';
-      (user.badges || []).forEach(badge => {
-        const span = document.createElement('span');
-        span.className = 'badge';
-        span.textContent = badge;
-        badgesDiv.appendChild(span);
-      });
-      // Stats
-      renderStats(user);
-      // Bio
-      document.getElementById('profile-bio').textContent = user.bio || '';
-    }
-    async function renderActivity(user) {
-      const res = await fetch(`/api/users/${user.id}/activity`);
-      const data = await res.json();
-      const activityList = document.getElementById('activity-list');
-      activityList.innerHTML = '';
-      (data.activity || []).forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'activity-item';
-        div.innerHTML = `<span class='activity-icon'><i class='fa fa-${item.icon || 'bolt'}'></i></span> <span>${item.text}</span> <span style='color:#b3b3b3;font-size:0.9em;'>${new Date(item.date).toLocaleString()}</span>`;
-        activityList.appendChild(div);
-      });
-    }
-    // --- Edit Profile Logic ---
-    const editBtn = document.getElementById('edit-profile-btn');
-    const editForm = document.getElementById('edit-profile-form');
-    const cancelEdit = document.getElementById('cancel-edit');
-    editBtn.onclick = function() {
-      editForm.style.display = 'flex';
-      fetchLoggedInProfile().then(user => {
-        document.getElementById('edit-username').value = user.username;
-        document.getElementById('edit-discord').value = user.discord || '';
-        document.getElementById('edit-bio').value = user.bio || '';
-      });
-    };
-    cancelEdit.onclick = function() {
-      editForm.style.display = 'none';
-    };
-    editForm.onsubmit = async function(e) {
-      e.preventDefault();
-      const username = document.getElementById('edit-username').value;
-      const discord = document.getElementById('edit-discord').value;
-      const bio = document.getElementById('edit-bio').value;
-      await fetch('/api/users/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, discord, bio })
-      });
-      const file = document.getElementById('edit-avatar').files[0];
-      if (file) {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        await fetch('/api/users/avatar', {
-          method: 'POST',
-          credentials: 'include',
-          body: formData
+      // Show only profile and activity by default
+      sections.profile.style.display = '';
+      sections.activity.style.display = '';
+
+      // --- Profile Data Fetch & Render ---
+      async function fetchLoggedInProfile() {
+        const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
+        if (!token) {
+          window.location.href = '/';
+          return null;
+        }
+        const res = await fetch('/api/profile', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!data.success || !data.user) {
+          window.location.href = '/';
+          return null;
+        }
+        return data.user;
+      }
+      function renderStats(user) {
+        const stats = [
+          { label: 'Joined', value: new Date(user.createdAt).toLocaleDateString() },
+          { label: 'Last Login', value: new Date(user.lastLogin).toLocaleString() },
+          { label: 'Applications', value: user.applications?.length || 0 },
+          { label: 'Departments', value: user.departments?.length || 0 },
+        ];
+        document.getElementById('profile-stats').innerHTML = stats.map(s => `<div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
+      }
+      function renderProfile(user) {
+        document.getElementById('profile-avatar').src = user.avatar || '/default-avatar.png';
+        document.getElementById('profile-username').textContent = user.username;
+        document.getElementById('profile-discord').innerHTML = `<i class='fab fa-discord'></i> ${user.discord || 'Not linked'} <span id='discord-status'></span>`;
+        // Roles
+        const rolesDiv = document.getElementById('profile-roles');
+        rolesDiv.innerHTML = '';
+        (user.roles || []).forEach(role => {
+          const span = document.createElement('span');
+          span.className = 'profile-role';
+          span.textContent = role.name;
+          rolesDiv.appendChild(span);
+        });
+        // Badges
+        const badgesDiv = document.getElementById('profile-badges');
+        badgesDiv.innerHTML = '';
+        (user.badges || []).forEach(badge => {
+          const span = document.createElement('span');
+          span.className = 'badge';
+          span.textContent = badge;
+          badgesDiv.appendChild(span);
+        });
+        // Stats
+        renderStats(user);
+        // Bio
+        document.getElementById('profile-bio').textContent = user.bio || '';
+      }
+      async function renderActivity(user) {
+        const res = await fetch(`/api/users/${user.id}/activity`);
+        const data = await res.json();
+        const activityList = document.getElementById('activity-list');
+        activityList.innerHTML = '';
+        (data.activity || []).forEach(item => {
+          const div = document.createElement('div');
+          div.className = 'activity-item';
+          div.innerHTML = `<span class='activity-icon'><i class='fa fa-${item.icon || 'bolt'}'></i></span> <span>${item.text}</span> <span style='color:#b3b3b3;font-size:0.9em;'>${new Date(item.date).toLocaleString()}</span>`;
+          activityList.appendChild(div);
         });
       }
-      editForm.style.display = 'none';
-      loadProfile();
-    };
-    // --- Logout ---
-    document.getElementById('logout-btn').onclick = function() {
-      localStorage.removeItem('gcrp_token');
-      sessionStorage.removeItem('gcrp_token');
-      window.location.href = '/';
-    };
-    // --- Load Profile ---
-    async function loadProfile() {
-      const user = await fetchLoggedInProfile();
-      if (!user) return;
-      renderProfile(user);
-      renderActivity(user);
-    }
-    window.addEventListener('DOMContentLoaded', () => {
+      // --- Edit Profile Logic ---
+      const editBtn = document.getElementById('edit-profile-btn');
+      const editForm = document.getElementById('edit-profile-form');
+      const cancelEdit = document.getElementById('cancel-edit');
+      editBtn.onclick = function() {
+        editForm.style.display = 'flex';
+        fetchLoggedInProfile().then(user => {
+          document.getElementById('edit-username').value = user.username;
+          document.getElementById('edit-discord').value = user.discord || '';
+          document.getElementById('edit-bio').value = user.bio || '';
+        });
+      };
+      cancelEdit.onclick = function() {
+        editForm.style.display = 'none';
+      };
+      editForm.onsubmit = async function(e) {
+        e.preventDefault();
+        const username = document.getElementById('edit-username').value;
+        const discord = document.getElementById('edit-discord').value;
+        const bio = document.getElementById('edit-bio').value;
+        await fetch('/api/users/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username, discord, bio })
+        });
+        const file = document.getElementById('edit-avatar').files[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append('avatar', file);
+          await fetch('/api/users/avatar', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+          });
+        }
+        editForm.style.display = 'none';
+        loadProfile();
+      };
+      // --- Logout ---
+      document.getElementById('logout-btn').onclick = function() {
+        localStorage.removeItem('gcrp_token');
+        sessionStorage.removeItem('gcrp_token');
+        window.location.href = '/';
+      };
+      // --- Load Profile ---
+      async function loadProfile() {
+        const user = await fetchLoggedInProfile();
+        if (!user) return;
+        renderProfile(user);
+        renderActivity(user);
+      }
       loadProfile();
       // Update navbar user if function exists
       if (typeof updateNavbarUser === 'function') updateNavbarUser();
     });
   </script>
-  <script src="auth-modals.js"></script>
 </body>
 </html> 
