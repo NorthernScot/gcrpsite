@@ -163,6 +163,57 @@
       document.body.classList.add('light-bg');
       document.body.classList.remove('dark-bg');
     }
+
+    // --- Profile Tabs Logic ---
+    const sidebarLinks = document.querySelectorAll('.sidebar-link');
+    const sections = {
+      profile: document.querySelector('.profile-info-card'),
+      security: null,
+      activity: document.getElementById('activity-section'),
+      settings: null
+    };
+    // Create Security and Settings sections if not present
+    if (!document.getElementById('security-section')) {
+      const sec = document.createElement('section');
+      sec.className = 'profile-section';
+      sec.id = 'security-section';
+      sec.innerHTML = '<h3><i class="fa fa-lock"></i> Security</h3><div style="margin-top:1em;color:#b3b3b3;">Change your password, enable 2FA, and manage account security here. (Coming soon)</div>';
+      document.querySelector('.profile-main').appendChild(sec);
+      sections.security = sec;
+    }
+    if (!document.getElementById('settings-section')) {
+      const set = document.createElement('section');
+      set.className = 'profile-section';
+      set.id = 'settings-section';
+      set.innerHTML = '<h3><i class="fa fa-cog"></i> Settings</h3><div style="margin-top:1em;color:#b3b3b3;">Personalize your experience. (Coming soon)</div>';
+      document.querySelector('.profile-main').appendChild(set);
+      sections.settings = set;
+    }
+    // Hide all except profile and activity by default
+    sections.security.style.display = 'none';
+    sections.settings.style.display = 'none';
+    // Tab click logic
+    sidebarLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        sidebarLinks.forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        // Hide all
+        sections.profile.style.display = 'none';
+        sections.security.style.display = 'none';
+        sections.activity.style.display = 'none';
+        sections.settings.style.display = 'none';
+        // Show selected
+        if (this.getAttribute('href') === '#profile') sections.profile.style.display = '';
+        if (this.getAttribute('href') === '#security') sections.security.style.display = '';
+        if (this.getAttribute('href') === '#activity') sections.activity.style.display = '';
+        if (this.getAttribute('href') === '#settings') sections.settings.style.display = '';
+      });
+    });
+    // Show only profile and activity by default
+    sections.profile.style.display = '';
+    sections.activity.style.display = '';
+
     // --- Profile Data Fetch & Render ---
     async function fetchLoggedInProfile() {
       const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
@@ -280,7 +331,12 @@
       renderProfile(user);
       renderActivity(user);
     }
-    window.addEventListener('DOMContentLoaded', loadProfile);
+    window.addEventListener('DOMContentLoaded', () => {
+      loadProfile();
+      // Update navbar user if function exists
+      if (typeof updateNavbarUser === 'function') updateNavbarUser();
+    });
   </script>
+  <script src="auth-modals.js"></script>
 </body>
 </html> 
