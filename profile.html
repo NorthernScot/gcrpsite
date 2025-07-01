@@ -173,7 +173,6 @@
         activity: document.getElementById('activity-section'),
         settings: null
       };
-      // Create Security and Settings sections if not present
       if (!document.getElementById('security-section')) {
         const sec = document.createElement('section');
         sec.className = 'profile-section';
@@ -194,32 +193,42 @@
       } else {
         sections.settings = document.getElementById('settings-section');
       }
-      // Hide all except profile and activity by default
       sections.security.style.display = 'none';
       sections.settings.style.display = 'none';
-      // Tab click logic
       sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
           e.preventDefault();
           sidebarLinks.forEach(l => l.classList.remove('active'));
           this.classList.add('active');
-          // Hide all
           sections.profile.style.display = 'none';
           sections.security.style.display = 'none';
           sections.activity.style.display = 'none';
           sections.settings.style.display = 'none';
-          // Show selected
           if (this.getAttribute('href') === '#profile') sections.profile.style.display = '';
           if (this.getAttribute('href') === '#security') sections.security.style.display = '';
           if (this.getAttribute('href') === '#activity') sections.activity.style.display = '';
           if (this.getAttribute('href') === '#settings') sections.settings.style.display = '';
         });
       });
-      // Show only profile and activity by default
       sections.profile.style.display = '';
       sections.activity.style.display = '';
 
-      // --- Profile Data Fetch & Render ---
+      // --- Profile Fetch Logic ---
+      function getUsernameFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('user');
+      }
+      async function fetchProfileByUsername(username) {
+        try {
+          const res = await fetch(`/api/users/profile/${encodeURIComponent(username)}`);
+          const data = await res.json();
+          if (!data.success || !data.user) throw new Error('User not found');
+          return data.user;
+        } catch (err) {
+          alert('User not found.');
+          window.location.href = '/';
+        }
+      }
       async function fetchLoggedInProfile() {
         const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
         if (!token) {
@@ -236,20 +245,30 @@
         }
         return data.user;
       }
+      async function fetchMe() {
+        // For checking if viewing own profile
+        const token = localStorage.getItem('gcrp_token') || sessionStorage.getItem('gcrp_token');
+        if (!token) return null;
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (!data.success || !data.user) return null;
+        return data.user;
+      }
       function renderStats(user) {
         const stats = [
-          { label: 'Joined', value: new Date(user.createdAt).toLocaleDateString() },
-          { label: 'Last Login', value: new Date(user.lastLogin).toLocaleString() },
+          { label: 'Joined', value: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '-' },
+          { label: 'Last Login', value: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '-' },
           { label: 'Applications', value: user.applications?.length || 0 },
           { label: 'Departments', value: user.departments?.length || 0 },
         ];
-        document.getElementById('profile-stats').innerHTML = stats.map(s => `<div class="stat-card"><div class="stat-value">${s.value}</div><div class="stat-label">${s.label}</div></div>`).join('');
+        document.getElementById('profile-stats').innerHTML = stats.map(s => `<div class=\"stat-card\"><div class=\"stat-value\">${s.value}</div><div class=\"stat-label\">${s.label}</div></div>`).join('');
       }
-      function renderProfile(user) {
+      function renderProfile(user, isOwnProfile) {
         document.getElementById('profile-avatar').src = user.avatar || '/default-avatar.png';
         document.getElementById('profile-username').textContent = user.username;
         document.getElementById('profile-discord').innerHTML = `<i class='fab fa-discord'></i> ${user.discord || 'Not linked'} <span id='discord-status'></span>`;
-        // Roles
         const rolesDiv = document.getElementById('profile-roles');
         rolesDiv.innerHTML = '';
         (user.roles || []).forEach(role => {
@@ -258,7 +277,6 @@
           span.textContent = role.name;
           rolesDiv.appendChild(span);
         });
-        // Badges
         const badgesDiv = document.getElementById('profile-badges');
         badgesDiv.innerHTML = '';
         (user.badges || []).forEach(badge => {
@@ -267,22 +285,24 @@
           span.textContent = badge;
           badgesDiv.appendChild(span);
         });
-        // Stats
         renderStats(user);
-        // Bio
         document.getElementById('profile-bio').textContent = user.bio || '';
+        // Show/hide edit button
+        document.getElementById('edit-profile-btn').style.display = isOwnProfile ? '' : 'none';
       }
       async function renderActivity(user) {
-        const res = await fetch(`/api/users/${user.id}/activity`);
-        const data = await res.json();
-        const activityList = document.getElementById('activity-list');
-        activityList.innerHTML = '';
-        (data.activity || []).forEach(item => {
-          const div = document.createElement('div');
-          div.className = 'activity-item';
-          div.innerHTML = `<span class='activity-icon'><i class='fa fa-${item.icon || 'bolt'}'></i></span> <span>${item.text}</span> <span style='color:#b3b3b3;font-size:0.9em;'>${new Date(item.date).toLocaleString()}</span>`;
-          activityList.appendChild(div);
-        });
+        try {
+          const res = await fetch(`/api/users/${user.id}/activity`);
+          const data = await res.json();
+          const activityList = document.getElementById('activity-list');
+          activityList.innerHTML = '';
+          (data.activity || []).forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'activity-item';
+            div.innerHTML = `<span class='activity-icon'><i class='fa fa-${item.icon || 'bolt'}'></i></span> <span>${item.text}</span> <span style='color:#b3b3b3;font-size:0.9em;'>${new Date(item.date).toLocaleString()}</span>`;
+            activityList.appendChild(div);
+          });
+        } catch {}
       }
       // --- Edit Profile Logic ---
       const editBtn = document.getElementById('edit-profile-btn');
@@ -323,7 +343,6 @@
         editForm.style.display = 'none';
         loadProfile();
       };
-      // --- Logout ---
       document.getElementById('logout-btn').onclick = function() {
         localStorage.removeItem('gcrp_token');
         sessionStorage.removeItem('gcrp_token');
@@ -331,13 +350,22 @@
       };
       // --- Load Profile ---
       async function loadProfile() {
-        const user = await fetchLoggedInProfile();
+        const urlUser = getUsernameFromUrl();
+        let user = null;
+        let isOwnProfile = false;
+        if (urlUser) {
+          user = await fetchProfileByUsername(urlUser);
+          const me = await fetchMe();
+          isOwnProfile = me && me.username && me.username.toLowerCase() === urlUser.toLowerCase();
+        } else {
+          user = await fetchLoggedInProfile();
+          isOwnProfile = true;
+        }
         if (!user) return;
-        renderProfile(user);
+        renderProfile(user, isOwnProfile);
         renderActivity(user);
       }
       loadProfile();
-      // Update navbar user if function exists
       if (typeof updateNavbarUser === 'function') updateNavbarUser();
     });
   </script>
